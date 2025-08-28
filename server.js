@@ -8,12 +8,12 @@ const PORT = 3000;
 
 // Configuración de conexión a SQL Server
 const dbConfig = {
-  user: 'UsuarioA',           // ← Ajusta según tu configuración
+  user: 'UsuarioA',
   password: 'papaya',
-  server: 'localhost',        // o IP del servidor
+  server: 'localhost',
   database: 'pedidos',
   options: {
-    encrypt: false,           // true si usas Azure
+    encrypt: false,
     trustServerCertificate: true
   }
 };
@@ -28,12 +28,12 @@ app.post('/submit', async (req, res) => {
 
   // Validación defensiva
   if (!nombre || !producto || !cantidad || isNaN(cantidad)) {
-    return res.status(400).send('Datos inválidos');
+    return res.status(400).json({ error: 'Datos inválidos' });
   }
 
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
+    await pool.request()
       .input('nombre_cliente', sql.VarChar(100), nombre)
       .input('producto', sql.VarChar(100), producto)
       .input('cantidad', sql.Int, parseInt(cantidad))
@@ -42,13 +42,16 @@ app.post('/submit', async (req, res) => {
         VALUES (@nombre_cliente, @producto, @cantidad)
       `);
 
-    res.send(`Pedido registrado: ${nombre} solicitó ${cantidad} unidad(es) de ${producto}.`);
+    // Respuesta JSON para el modal
+    res.status(200).json({
+      mensaje: `Pedido registrado: ${nombre} solicitó ${cantidad} unidad(es) de ${producto}.`
+    });
   } catch (err) {
-    console.error('Error al insertar en SQL Server:', err);
-    res.status(500).send('Error interno');
+    console.error('❌ Error al insertar en SQL Server:', err);
+    res.status(500).json({ error: 'Error interno al registrar el pedido' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
